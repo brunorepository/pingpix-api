@@ -1,0 +1,54 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diretórios temporários
+tmp/
+temp/
+
+# Dependências
+node_modules/
+jspm_packages/
+
+# Builds e transpilações
+dist/
+build/
+
+# Arquivos de ambiente
+.env
+.env.local
+.env.*.local
+
+# Configurações de IDEs
+.idea/
+.vscode/
+*.swp
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+out/
+
+# Testes
+coverage/
+*.lcov
+
+# Outras configurações e metadados
+.DS_Store
+Thumbs.db
+*.iml
+*.suo
+*.dll
+*.exe
+*.class
