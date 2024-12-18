@@ -24,11 +24,6 @@ jspm_packages/
 dist/
 build/
 
-# Arquivos de ambiente
-.env
-.env.local
-.env.*.local
-
 # Configurações de IDEs
 .idea/
 .vscode/
