@@ -18,6 +18,7 @@ const generateUniqueId = async (): Promise<string> => {
   return id;
 };
 
+// Endpoint para registrar usuário
 export const registerPlayer = async (
   req: Request,
   res: Response,
@@ -25,18 +26,12 @@ export const registerPlayer = async (
   try {
     const { name, cpf, dateOfBirth, password, email, referralCode } = req.body;
 
-    // Validação do CPF
-    if (!/^\d{11}$/.test(cpf)) {
-      res.status(400).json({ error: 'CPF inválido. Deve conter 11 dígitos.' });
-      return;
-    }
-
     // Verificar duplicidade
     const existingPlayer = await PlayerSchema.findOne({
       $or: [{ email }, { cpf }],
     });
     if (existingPlayer) {
-      res.status(400).json({ error: 'Email ou CPF já cadastrados' });
+      res.status(400).json({ message: 'Email ou CPF já cadastrados.' });
       return;
     }
 
@@ -50,19 +45,17 @@ export const registerPlayer = async (
     const newPlayer = new PlayerSchema({
       name,
       id,
-      cpf, // CPF será armazenado diretamente
-      dateOfBirth,
+      cpf, // CPF armazenado como recebido
+      dateOfBirth, // Data de nascimento no formato "DD/MM/YYYY"
       password: hashedPassword,
       email,
-      referralCode,
+      referralCode: referralCode || null, // Armazenar código promocional, se existir
     });
 
     await newPlayer.save();
-    res
-      .status(201)
-      .json({ message: 'Jogador cadastrado com sucesso!', player: newPlayer });
+    res.status(201).json({ message: 'Jogador cadastrado com sucesso!' });
   } catch (error) {
     console.error('Erro ao cadastrar jogador:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 };

@@ -30,7 +30,6 @@ const PlayerSchema = new Schema<IPlayer>({
   dateOfBirth: {
     type: String,
     required: true,
-    match: /^\d{2}\/\d{2}\/\d{4}$/,
   },
   password: {
     type: String,
@@ -44,8 +43,16 @@ const PlayerSchema = new Schema<IPlayer>({
   },
   referralCode: {
     type: String,
-    match: /^\d{6}$/,
+    validate: {
+      validator: function (v) {
+        return /^[a-zA-Z0-9]{6}$/.test(v); // Aceita letras e números, exatamente 6 caracteres
+      },
+      message: (props) =>
+        `${props.value} is not a valid referral code. It must contain exactly 6 alphanumeric characters.`,
+    },
+    required: [true, 'Referral code is required.'],
   },
+
   balance: {
     type: Number,
     required: true,
