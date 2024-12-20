@@ -3,6 +3,9 @@ import dotenv from 'dotenv';
 import connectDatabase from './config/database';
 import cors from 'cors';
 import registerRoutes from './routes/registerRoutes';
+import playerRoutes from './routes/playerRoutes';
+import loginRoutes from './routes/loginRoutes';
+import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
 
 dotenv.config();
 
@@ -25,6 +28,9 @@ connectDatabase();
 
 //Routes
 app.use('/api/authentication', registerRoutes);
+app.use('/api/authentication', loginRoutes);
+app.use('/api/authentication', recoveryPasswordRoutes);
+app.use('/api/', playerRoutes);
 
 console.log(process.env.DATABASE_LOCATION);
 
