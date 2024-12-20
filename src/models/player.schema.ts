@@ -1,63 +1,68 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IPlayer extends Document {
-  name: string;
+  name: string; // Nome do jogador
   id: string; // 11 dígitos
   cpf: string; // Hash do CPF
   dateOfBirth: string; // Formato "DD/MM/YYYY"
   password: string; // Senha do jogador
   email: string; // Email único
   referralCode: string; // Código de indicação de 6 dígitos
-  balance: number;
+  balance: number; // Saldo
+  resetToken?: string | null; // Permite null
+  tokenExpiry?: Date | null; // Permite null
+  createdAt?: Date; // Data de criação do documento
+  updatedAt?: Date; // Data de atualização do documento
 }
 
-const PlayerSchema = new Schema<IPlayer>({
-  name: {
-    type: String,
-    required: true,
-  },
-  id: {
-    type: String,
-    required: true,
-    unique: true,
-    match: /^\d{11}$/,
-  },
-  cpf: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  dateOfBirth: {
-    type: String,
-    required: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-  },
-  referralCode: {
-    type: String,
-    validate: {
-      validator: function (v) {
-        return /^[a-zA-Z0-9]{6}$/.test(v); // Aceita letras e números, exatamente 6 caracteres
-      },
-      message: (props) =>
-        `${props.value} is not a valid referral code. It must contain exactly 6 alphanumeric characters.`,
+const PlayerSchema = new Schema<IPlayer>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    required: [true, 'Referral code is required.'],
+    id: {
+      type: String,
+      required: true,
+      unique: true,
+      match: /^\d{11}$/, // Exatamente 11 dígitos
+    },
+    cpf: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    dateOfBirth: {
+      type: String,
+      required: true,
+      match: /^\d{2}\/\d{2}\/\d{4}$/, // Formato DD/MM/YYYY
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, // Validação básica de e-mail
+    },
+    referralCode: {
+      type: String,
+      match: /^\w{6}$/, // Exatamente 6 caracteres alfanuméricos
+    },
+    balance: {
+      type: Number,
+      required: true,
+      default: 0,
+    },
+    resetToken: { type: String, default: null },
+    tokenExpiry: { type: Date, default: null },
   },
-
-  balance: {
-    type: Number,
-    required: true,
-    default: 0,
+  {
+    timestamps: true, // Adiciona automaticamente createdAt e updatedAt
   },
-});
+);
 
 export default mongoose.model<IPlayer>('Player', PlayerSchema);
