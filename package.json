@@ -4,7 +4,7 @@
   "main": "src/server.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon src/server.ts",
+    "dev": "ts-node-dev src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint \"src/**/*.{ts,js}\"",
@@ -39,6 +39,7 @@
     "globals": "^15.13.0",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.18.0"
   }
