@@ -17,7 +17,7 @@ app.use(express.json());
 // Configuração do CORS
 app.use(
   cors({
-    origin: 'http://localhost:5173', // Permitir apenas o frontend
+    origin: 'https://pingpix.net', // Permitir apenas o frontend
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
     allowedHeaders: ['Content-Type', 'Authorization'], // Cabeçalhos permitidos
   }),
