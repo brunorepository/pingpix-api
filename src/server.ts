@@ -24,6 +24,9 @@ app.use(
   }),
 );
 
+//Conexão com o banco de dados
+connectDatabase();
+
 //Routes
 app.use('/api/authentication', registerRoutes);
 app.use('/api/authentication', loginRoutes);
@@ -35,6 +38,5 @@ console.log(process.env.DATABASE_LOCATION);
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  //Conexão com o banco de dados
-  connectDatabase();
+  console.log(`Server is running on port ${PORT}`);
 });
