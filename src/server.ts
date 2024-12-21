@@ -17,14 +17,12 @@ app.use(express.json());
 // Configuração do CORS
 app.use(
   cors({
-    origin: 'https://pingpix.net', // Permitir apenas o frontend
+    // origin: process.env.FRONT_URL || 'http://localhost:5173', // Permitir apenas o frontend
+    origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
     allowedHeaders: ['Content-Type', 'Authorization'], // Cabeçalhos permitidos
   }),
 );
-
-//Conexão com o banco de dados
-connectDatabase();
 
 //Routes
 app.use('/api/authentication', registerRoutes);
@@ -37,5 +35,6 @@ console.log(process.env.DATABASE_LOCATION);
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  //Conexão com o banco de dados
+  connectDatabase();
 });
