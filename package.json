@@ -14,13 +14,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "app-root-path": "^3.1.0",
+    "axios": "^1.7.9",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "express": "^4.17.3",
+    "fs": "^0.0.1-security",
+    "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.9.0",
     "nodemailer": "^6.9.16",
+    "path": "^0.12.7",
+    "url": "^0.11.4",
     "uuid": "^11.0.3"
   },
   "devDependencies": {
