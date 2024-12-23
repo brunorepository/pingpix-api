@@ -9,6 +9,7 @@ export interface IPlayer extends Document {
   email: string; // Email único
   referralCode: string; // Código de indicação de 6 dígitos
   balance: number; // Saldo
+  txid?: string | null; // Transação Pix associada ao jogador (opcional)
   resetToken?: string | null; // Permite null
   tokenExpiry?: Date | null; // Permite null
   createdAt?: Date; // Data de criação do documento
@@ -57,9 +58,14 @@ const PlayerSchema = new Schema<IPlayer>(
       required: true,
       default: 0,
     },
+    txid: {
+      type: String,
+      default: null,
+    },
     resetToken: { type: String, default: null },
     tokenExpiry: { type: Date, default: null },
   },
+
   {
     timestamps: true, // Adiciona automaticamente createdAt e updatedAt
   },

@@ -6,6 +6,7 @@ import registerRoutes from './routes/registerRoutes';
 import playerRoutes from './routes/playerRoutes';
 import loginRoutes from './routes/loginRoutes';
 import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
+import paymentsRoutes from './routes/paymentsRoutes';
 
 dotenv.config();
 
@@ -32,8 +33,7 @@ app.use('/api/authentication', registerRoutes);
 app.use('/api/authentication', loginRoutes);
 app.use('/api/authentication', recoveryPasswordRoutes);
 app.use('/api/', playerRoutes);
-
-console.log(process.env.DATABASE_LOCATION);
+app.use('/api', paymentsRoutes);
 
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;
