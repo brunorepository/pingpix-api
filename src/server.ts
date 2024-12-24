@@ -7,6 +7,7 @@ import playerRoutes from './routes/playerRoutes';
 import loginRoutes from './routes/loginRoutes';
 import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
+import { registerWebhook } from './controllers/paymentsController';
 
 dotenv.config();
 
@@ -27,6 +28,8 @@ app.use(
 
 //Conexão com o banco de dados
 connectDatabase();
+
+registerWebhook();
 
 //Routes
 app.use('/api/authentication', registerRoutes);
