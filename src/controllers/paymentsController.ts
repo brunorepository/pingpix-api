@@ -240,14 +240,20 @@ export const webhookHandler = async (
         )}`,
       );
 
-      // Emite o evento via Socket.IO
-      io.emit('pixPaymentSuccess', {
+      // Cria o payload do evento
+      const paymentEvent = {
         userId: user._id,
         name: user.name,
         newBalance: user.balance,
         transactionId: txid,
         value: parseFloat(valor),
-      });
+      };
+
+      // Log do evento antes de emitir
+      console.log('Emitindo evento pixPaymentSuccess:', paymentEvent);
+
+      // Emite o evento via Socket.IO
+      io.emit('pixPaymentSuccess', paymentEvent);
 
       if (gnExtras && gnExtras.pagador) {
         console.log('Dados do pagador:', gnExtras.pagador);
