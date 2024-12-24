@@ -204,6 +204,7 @@ export const webhookHandler = async (
   res: Response,
 ): Promise<void> => {
   try {
+    const io = req.app.get('io'); // Recupera o Socket.IO do app
     const { pix } = req.body;
 
     if (!pix || !Array.isArray(pix) || pix.length === 0) {
@@ -217,13 +218,14 @@ export const webhookHandler = async (
     console.log(`Recebendo ${pix.length} transação(ões) para processamento.`);
 
     for (const transaction of pix) {
-      const { txid, valor, gnExtras } = transaction;
+      const { txid, valor } = transaction;
 
       if (!txid || !valor) {
         console.error('Dados da transação Pix incompletos:', transaction);
         continue;
       }
 
+      // Exemplo de lógica para atualizar o usuário no banco de dados
       const user = await User.findOne({ txid });
       if (!user) {
         console.error(`Usuário não encontrado para o txid: ${txid}`);
@@ -235,14 +237,16 @@ export const webhookHandler = async (
       await user.save();
 
       console.log(
-        `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(
-          2,
-        )}`,
+        `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(2)}`,
       );
 
-      if (gnExtras && gnExtras.pagador) {
-        console.log('Dados do pagador:', gnExtras.pagador);
-      }
+      // Emite um evento via Socket.IO para o frontend
+      io.emit('pixPaymentSuccess', {
+        userId: user._id,
+        name: user.name,
+        balance: user.balance,
+        message: `Pagamento Pix de R$${valor} confirmado para ${user.name}`,
+      });
     }
 
     res.status(201).json({ message: 'Transações processadas com sucesso.' });
