@@ -216,54 +216,87 @@ export const webhookHandler = async (
 
     console.log(`Recebendo ${pix.length} transação(ões) para processamento.`);
 
+    const responses = []; // Armazena as respostas de cada transação para retorno ao cliente
+
     for (const transaction of pix) {
       const { txid, valor, gnExtras } = transaction;
 
       if (!txid || !valor) {
         console.error('Dados da transação Pix incompletos:', transaction);
+        responses.push({
+          txid: txid || 'N/A',
+          status: 'error',
+          message: 'Dados incompletos na transação.',
+        });
         continue;
       }
 
       const user = await User.findOne({ txid });
       if (!user) {
         console.error(`Usuário não encontrado para o txid: ${txid}`);
+        responses.push({
+          txid,
+          status: 'error',
+          message: 'Usuário não encontrado para o txid.',
+        });
         continue;
       }
 
-      user.balance += parseFloat(valor);
-      user.txid = null;
-      await user.save();
+      try {
+        // Atualiza o saldo do usuário
+        user.balance += parseFloat(valor);
+        user.txid = null;
+        await user.save();
 
-      console.log(
-        `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(
-          2,
-        )}`,
-      );
+        console.log(
+          `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(
+            2,
+          )}`,
+        );
 
-      // Cria o payload do evento
-      const paymentEvent = {
-        userId: user._id,
-        name: user.name,
-        newBalance: user.balance,
-        transactionId: txid,
-        value: parseFloat(valor),
-      };
+        // Emite o evento via Socket.IO
+        const paymentEvent = {
+          userId: user._id,
+          name: user.name,
+          newBalance: user.balance,
+          transactionId: txid,
+          value: parseFloat(valor),
+        };
 
-      // Log do evento antes de emitir
-      console.log('Emitindo evento pixPaymentSuccess:', paymentEvent);
+        io.emit('pixPaymentSuccess', paymentEvent);
+        console.log('Evento pixPaymentSuccess emitido:', paymentEvent);
 
-      // Emite o evento via Socket.IO
-      io.emit('pixPaymentSuccess', paymentEvent);
+        responses.push({
+          txid,
+          status: 'success',
+          message: `Transação processada com sucesso para o usuário ${user.name}.`,
+        });
+      } catch (error) {
+        console.error(
+          `Erro ao atualizar saldo do usuário para o txid: ${txid}`,
+          error,
+        );
+        responses.push({
+          txid,
+          status: 'error',
+          message: `Erro ao atualizar saldo do usuário para o txid ${txid}.`,
+        });
+      }
 
       if (gnExtras && gnExtras.pagador) {
         console.log('Dados do pagador:', gnExtras.pagador);
       }
     }
 
-    res.status(201).json({ message: 'Transações processadas com sucesso.' });
+    res.status(201).json({
+      message: 'Processamento do webhook concluído.',
+      results: responses,
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error('Erro ao processar webhook:', error.message);
-    res.status(500).json({ error: 'Erro ao processar notificações Pix.' });
+    res
+      .status(500)
+      .json({ error: 'Erro ao processar notificações Pix.', details: error });
   }
 };
