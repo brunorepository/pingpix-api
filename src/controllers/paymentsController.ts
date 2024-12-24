@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import appRootPath from 'app-root-path';
 import { Request, Response } from 'express';
 import User from '../models/player.schema';
+import { io } from '../server'; // Certifique-se de importar o io corretamente
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -198,13 +199,11 @@ export const createPixPayment = async (
     res.status(500).json({ error: 'Erro ao criar cobrança Pix.' });
   }
 };
-
 export const webhookHandler = async (
   req: Request,
   res: Response,
 ): Promise<void> => {
   try {
-    const io = req.app.get('io'); // Recupera o Socket.IO do app
     const { pix } = req.body;
 
     if (!pix || !Array.isArray(pix) || pix.length === 0) {
@@ -218,14 +217,13 @@ export const webhookHandler = async (
     console.log(`Recebendo ${pix.length} transação(ões) para processamento.`);
 
     for (const transaction of pix) {
-      const { txid, valor } = transaction;
+      const { txid, valor, gnExtras } = transaction;
 
       if (!txid || !valor) {
         console.error('Dados da transação Pix incompletos:', transaction);
         continue;
       }
 
-      // Exemplo de lógica para atualizar o usuário no banco de dados
       const user = await User.findOne({ txid });
       if (!user) {
         console.error(`Usuário não encontrado para o txid: ${txid}`);
@@ -237,16 +235,23 @@ export const webhookHandler = async (
       await user.save();
 
       console.log(
-        `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(2)}`,
+        `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(
+          2,
+        )}`,
       );
 
-      // Emite um evento via Socket.IO para o frontend
+      // Emite o evento via Socket.IO
       io.emit('pixPaymentSuccess', {
         userId: user._id,
         name: user.name,
-        balance: user.balance,
-        message: `Pagamento Pix de R$${valor} confirmado para ${user.name}`,
+        newBalance: user.balance,
+        transactionId: txid,
+        value: parseFloat(valor),
       });
+
+      if (gnExtras && gnExtras.pagador) {
+        console.log('Dados do pagador:', gnExtras.pagador);
+      }
     }
 
     res.status(201).json({ message: 'Transações processadas com sucesso.' });

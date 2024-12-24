@@ -1,25 +1,24 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import connectDatabase from './config/database';
+import http from 'http';
+import { Server } from 'socket.io';
 import cors from 'cors';
+import connectDatabase from './config/database';
 import registerRoutes from './routes/registerRoutes';
 import playerRoutes from './routes/playerRoutes';
 import loginRoutes from './routes/loginRoutes';
 import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
 import { registerWebhook } from './controllers/paymentsController';
-import http from 'http';
-import { Server } from 'socket.io';
 
 dotenv.config();
 
-// Criação do app e servidor HTTP
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Permite o acesso do frontend (ajuste conforme necessário)
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
+    origin: '*', // Permitir todas as origens
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   },
 });
 
@@ -29,19 +28,25 @@ app.use(express.json());
 // Configuração do CORS
 app.use(
   cors({
-    origin: '*', // Permitir apenas o frontend
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Métodos permitidos
-    allowedHeaders: ['Content-Type', 'Authorization'], // Cabeçalhos permitidos
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   }),
 );
 
 // Conexão com o banco de dados
 connectDatabase();
 
-// Configura o Socket.IO no app
-app.set('io', io);
+// Conexão do Socket.IO
+io.on('connection', (socket) => {
+  console.log('Usuário conectado:', socket.id);
 
-// Registro do webhook
+  socket.on('disconnect', () => {
+    console.log('Usuário desconectado:', socket.id);
+  });
+});
+
+// Registrar o webhook
 registerWebhook();
 
 // Rotas
@@ -56,3 +61,6 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Exporta o io para uso no webhook
+export { io };
