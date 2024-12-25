@@ -54,7 +54,7 @@ app.use('/api/authentication', registerRoutes);
 app.use('/api/authentication', loginRoutes);
 app.use('/api/authentication', recoveryPasswordRoutes);
 app.use('/api/', playerRoutes);
-app.use('/api', paymentsRoutes);
+app.use('/api', paymentsRoutes(io));
 
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;

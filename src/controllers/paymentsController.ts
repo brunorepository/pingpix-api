@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import appRootPath from 'app-root-path';
 import { Request, Response } from 'express';
 import User from '../models/player.schema';
+import { Server } from 'socket.io'; // Certifique-se de inicializar o Socket.IO no seu servidor
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -198,57 +199,62 @@ export const createPixPayment = async (
     res.status(500).json({ error: 'Erro ao criar cobrança Pix.' });
   }
 };
+export const webhookHandler =
+  (io: Server) =>
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { pix } = req.body;
 
-export const webhookHandler = async (
-  req: Request,
-  res: Response,
-): Promise<void> => {
-  try {
-    const { pix } = req.body;
+      if (!pix || !Array.isArray(pix) || pix.length === 0) {
+        console.log('Notificação de teste recebida ou sem transações Pix.');
+        res
+          .status(200)
+          .json({ message: 'Webhook de teste recebido com sucesso.' });
+        return;
+      }
 
-    if (!pix || !Array.isArray(pix) || pix.length === 0) {
-      console.log('Notificação de teste recebida ou sem transações Pix.');
-      res
-        .status(200)
-        .json({ message: 'Webhook de teste recebido com sucesso.' });
-      return;
+      console.log(`Recebendo ${pix.length} transação(ões) para processamento.`);
+
+      for (const transaction of pix) {
+        const { txid, valor, gnExtras } = transaction;
+
+        if (!txid || !valor) {
+          console.error('Dados da transação Pix incompletos:', transaction);
+          continue;
+        }
+
+        const user = await User.findOne({ txid });
+        if (!user) {
+          console.error(`Usuário não encontrado para o txid: ${txid}`);
+          continue;
+        }
+
+        user.balance += parseFloat(valor);
+        user.txid = null;
+        await user.save();
+
+        console.log(
+          `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(
+            2,
+          )}`,
+        );
+
+        // Notificar o frontend sobre a atualização de saldo
+        io.to(user.id).emit('paymentReceived', {
+          userId: user.id,
+          newBalance: user.balance,
+          amount: parseFloat(valor),
+        });
+
+        if (gnExtras && gnExtras.pagador) {
+          console.log('Dados do pagador:', gnExtras.pagador);
+        }
+      }
+
+      res.status(201).json({ message: 'Transações processadas com sucesso.' });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      console.error('Erro ao processar webhook:', error.message);
+      res.status(500).json({ error: 'Erro ao processar notificações Pix.' });
     }
-
-    console.log(`Recebendo ${pix.length} transação(ões) para processamento.`);
-
-    for (const transaction of pix) {
-      const { txid, valor, gnExtras } = transaction;
-
-      if (!txid || !valor) {
-        console.error('Dados da transação Pix incompletos:', transaction);
-        continue;
-      }
-
-      const user = await User.findOne({ txid });
-      if (!user) {
-        console.error(`Usuário não encontrado para o txid: ${txid}`);
-        continue;
-      }
-
-      user.balance += parseFloat(valor);
-      user.txid = null;
-      await user.save();
-
-      console.log(
-        `Saldo do usuário ${user.name} atualizado para: R$${user.balance.toFixed(
-          2,
-        )}`,
-      );
-
-      if (gnExtras && gnExtras.pagador) {
-        console.log('Dados do pagador:', gnExtras.pagador);
-      }
-    }
-
-    res.status(201).json({ message: 'Transações processadas com sucesso.' });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    console.error('Erro ao processar webhook:', error.message);
-    res.status(500).json({ error: 'Erro ao processar notificações Pix.' });
-  }
-};
+  };
