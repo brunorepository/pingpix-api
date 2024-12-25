@@ -242,7 +242,7 @@ export const webhookHandler = async (
       // Envia uma mensagem via WebSocket para notificar o cliente
       const message = JSON.stringify({
         type: 'paymentReceived',
-        userId: user.id,
+        userId: user._id,
         amount: parseFloat(valor),
       });
 
