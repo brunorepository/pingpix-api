@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import http from 'http';
-import { Server } from 'socket.io';
+import { WebSocketServer, WebSocket } from 'ws'; // Importa WebSocket nativo
 import cors from 'cors';
 import connectDatabase from './config/database';
 import registerRoutes from './routes/registerRoutes';
@@ -15,12 +15,7 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*', // Permitir todas as origens
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  },
-});
+const wss = new WebSocketServer({ server }); // Configura o WebSocketServer
 
 // Middleware
 app.use(express.json());
@@ -37,12 +32,26 @@ app.use(
 // Conexão com o banco de dados
 connectDatabase();
 
-// Conexão do Socket.IO
-io.on('connection', (socket) => {
-  console.log('Usuário conectado:', socket.id);
+// Gerenciamento de conexões WebSocket
+const clients = new Set<WebSocket>();
 
-  socket.on('disconnect', () => {
-    console.log('Usuário desconectado:', socket.id);
+wss.on('connection', (ws: WebSocket) => {
+  console.log('Cliente conectado ao WebSocket.');
+
+  // Adiciona o cliente conectado ao conjunto de clientes
+  clients.add(ws);
+
+  ws.on('message', (message) => {
+    console.log('Mensagem recebida do cliente:', message.toString());
+  });
+
+  ws.on('close', () => {
+    console.log('Cliente desconectado.');
+    clients.delete(ws); // Remove o cliente ao desconectar
+  });
+
+  ws.on('error', (error) => {
+    console.error('Erro na conexão WebSocket:', error);
   });
 });
 
@@ -54,13 +63,13 @@ app.use('/api/authentication', registerRoutes);
 app.use('/api/authentication', loginRoutes);
 app.use('/api/authentication', recoveryPasswordRoutes);
 app.use('/api/', playerRoutes);
-app.use('/api', paymentsRoutes(io));
+app.use('/api', paymentsRoutes);
 
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  console.log(`Servidor rodando na porta ${PORT}`);
 });
 
-// Exporta o io para uso no webhook
-export { io };
+// Exporta o WebSocketServer e o conjunto de clientes para uso externo
+export { wss, clients };
