@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import http from 'http';
-import { WebSocketServer, WebSocket } from 'ws'; // Importa WebSocket nativo
+import { WebSocketServer, WebSocket, RawData } from 'ws'; // Importa RawData para tipar mensagens
 import cors from 'cors';
 import connectDatabase from './config/database';
 import registerRoutes from './routes/registerRoutes';
@@ -41,17 +41,21 @@ wss.on('connection', (ws: WebSocket) => {
   // Adiciona o cliente conectado ao conjunto de clientes
   clients.add(ws);
 
-  ws.on('message', (message) => {
-    console.log('Mensagem recebida do cliente:', message.toString());
+  // Lida com mensagens recebidas
+  ws.on('message', (message: RawData) => {
+    const messageText = message.toString(); // Converte o RawData para string
+    console.log('Mensagem recebida do cliente:', messageText);
   });
 
+  // Lida com o fechamento da conexão
   ws.on('close', () => {
     console.log('Cliente desconectado.');
     clients.delete(ws); // Remove o cliente ao desconectar
   });
 
-  ws.on('error', (error) => {
-    console.error('Erro na conexão WebSocket:', error);
+  // Lida com erros na conexão
+  ws.on('error', (error: Error) => {
+    console.error('Erro na conexão WebSocket:', error.message);
   });
 });
 
