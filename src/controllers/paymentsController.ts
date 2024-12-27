@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import dotenv from 'dotenv';
 import appRootPath from 'app-root-path';
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import User from '../models/player.schema';
 import { clients } from '../server';
 
@@ -199,6 +199,124 @@ export const createPixPayment = async (
     res.status(500).json({ error: 'Erro ao criar cobrança Pix.' });
   }
 };
+export async function subtractBalanceController(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { playerId, amount } = req.body;
+
+    // Validação dos dados de entrada
+    if (!playerId || typeof playerId !== 'string') {
+      res.status(400).json({
+        error: 'O ID do jogador é obrigatório e deve ser uma string.',
+      });
+      return;
+    }
+
+    if (!amount || typeof amount !== 'number' || amount <= 0) {
+      res.status(400).json({
+        error:
+          'O valor a ser subtraído é obrigatório e deve ser um número maior que zero.',
+      });
+      return;
+    }
+
+    console.log(
+      `Recebendo a requisição para subtrair ${amount} do jogador ${playerId}`,
+    );
+
+    // Busca o jogador
+    const player = await User.findOne({ _id: playerId });
+
+    if (!player) {
+      res.status(404).json({ error: 'Jogador não encontrado.' });
+      return;
+    }
+
+    console.log(
+      `Jogador encontrado: ${playerId}, Saldo atual: ${player.balance}`,
+    );
+
+    // Verifica se o saldo é suficiente
+    if (player.balance < amount) {
+      res.status(400).json({ error: 'Saldo insuficiente.' });
+      return;
+    }
+
+    // Subtrai o valor do saldo do jogador
+    const updatedPlayer = await User.findOneAndUpdate(
+      { _id: playerId },
+      { $inc: { balance: -amount } },
+      { new: true, runValidators: true },
+    );
+
+    // Verifica se a atualização foi bem-sucedida
+    if (!updatedPlayer) {
+      res.status(400).json({ error: 'Erro ao atualizar o saldo.' });
+      return;
+    }
+
+    console.log(`Saldo após subtração: ${updatedPlayer.balance}`);
+
+    // Retorna o saldo atualizado
+    res.status(200).json({
+      message: 'Saldo atualizado com sucesso.',
+      balance: updatedPlayer.balance,
+    });
+  } catch (error) {
+    console.error('Erro interno:', error);
+    next(error); // Passa o erro para o middleware de tratamento
+  }
+}
+
+export async function addBalanceController(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  try {
+    const { playerId, amount } = req.body;
+
+    // Validação dos dados de entrada
+    if (!playerId || typeof playerId !== 'string') {
+      res.status(400).json({
+        error: 'O ID do jogador é obrigatório e deve ser uma string.',
+      });
+      return;
+    }
+
+    if (!amount || typeof amount !== 'number' || amount <= 0) {
+      res.status(400).json({
+        error:
+          'O valor a ser adicionado é obrigatório e deve ser um número maior que zero.',
+      });
+      return;
+    }
+
+    // Busca o jogador e tenta adicionar o saldo
+    const updatedPlayer = await User.findOneAndUpdate(
+      { _id: playerId },
+      { $inc: { balance: amount } },
+      { new: true, runValidators: true },
+    );
+
+    if (!updatedPlayer) {
+      res.status(404).json({ error: 'Jogador não encontrado.' });
+      return;
+    }
+
+    // Retorna o saldo atualizado
+    res.status(200).json({
+      message: 'Saldo atualizado com sucesso.',
+      balance: updatedPlayer.balance,
+    });
+  } catch (error) {
+    console.error('Erro interno:', error);
+    next(error); // Passa o erro para o middleware de tratamento
+  }
+}
 
 export const webhookHandler = async (
   req: Request,
