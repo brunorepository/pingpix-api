@@ -11,13 +11,15 @@ import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
 import rankingRoutes from './routes/rankingRoutes';
 
+import EarningsWebSocketService from './services/earnings.ws';
+
 import { registerWebhook } from './controllers/paymentsController';
 
 dotenv.config();
 
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocketServer({ server }); // Configura o WebSocketServer
+const server = http.createServer(app); // Servidor HTTP
+const wss = new WebSocketServer({ noServer: true }); // WebSocketServer com noServer: true
 
 // Middleware
 app.use(express.json());
@@ -40,7 +42,7 @@ const clients = new Set<WebSocket>();
 wss.on('connection', (ws: WebSocket) => {
   console.log('Cliente conectado ao WebSocket.');
 
-  // Adiciona o cliente conectado ao conjunto de clientes
+  // Adiciona o cliente ao conjunto de clientes
   clients.add(ws);
 
   // Lida com mensagens recebidas
@@ -71,6 +73,9 @@ app.use('/api/authentication', recoveryPasswordRoutes);
 app.use('/api/', playerRoutes);
 app.use('/api', paymentsRoutes);
 app.use('/api', rankingRoutes);
+
+// Inicializa o serviço WebSocket
+EarningsWebSocketService.initialize(server);
 
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;
