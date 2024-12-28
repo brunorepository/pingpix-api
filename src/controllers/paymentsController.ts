@@ -8,6 +8,7 @@ import appRootPath from 'app-root-path';
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/player.schema';
 import { clients } from '../server';
+import EarningsWebSocketService from '../services/earnings.ws';
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -272,6 +273,31 @@ export async function subtractBalanceController(
   }
 }
 
+// Array de ganhos (poderia estar em um banco de dados)
+const gains: { player: string; amount: number }[] = [];
+
+// Função que adiciona um ganho e envia uma notificação via WebSocket
+export const addGain = (player: string, amount: number): void => {
+  if (!player || typeof amount !== 'number') {
+    console.error('Dados inválidos para adicionar ganho.');
+    return;
+  }
+
+  const newGain = { player, amount };
+  gains.unshift(newGain);
+
+  // Mantém os últimos 10 ganhos
+  if (gains.length > 10) {
+    gains.pop();
+  }
+
+  // Envia a atualização para os clientes conectados via WebSocket
+  EarningsWebSocketService.broadcast({ type: 'update-gains', data: gains });
+
+  console.log('Novo ganho adicionado:', newGain);
+};
+
+// Função que lida com a atualização do saldo e a adição de ganho
 export async function addBalanceController(
   req: Request,
   res: Response,
@@ -307,6 +333,15 @@ export async function addBalanceController(
       res.status(404).json({ error: 'Jogador não encontrado.' });
       return;
     }
+
+    // Dados do ganho a serem passados para addGain
+    const gainData = {
+      player: updatedPlayer.name, // Assumindo que o nome do jogador está em 'updatedPlayer.name'
+      amount: amount,
+    };
+
+    // Adiciona o ganho e notifica via WebSocket
+    addGain(gainData.player, gainData.amount);
 
     // Retorna o saldo atualizado
     res.status(200).json({
