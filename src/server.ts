@@ -9,6 +9,8 @@ import playerRoutes from './routes/playerRoutes';
 import loginRoutes from './routes/loginRoutes';
 import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
+import rankingRoutes from './routes/rankingRoutes';
+
 import { registerWebhook } from './controllers/paymentsController';
 
 dotenv.config();
@@ -68,6 +70,7 @@ app.use('/api/authentication', loginRoutes);
 app.use('/api/authentication', recoveryPasswordRoutes);
 app.use('/api/', playerRoutes);
 app.use('/api', paymentsRoutes);
+app.use('/api', rankingRoutes);
 
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;
