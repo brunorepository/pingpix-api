@@ -199,6 +199,7 @@ export const createPixPayment = async (
     res.status(500).json({ error: 'Erro ao criar cobrança Pix.' });
   }
 };
+
 export async function subtractBalanceController(
   req: Request,
   res: Response,
