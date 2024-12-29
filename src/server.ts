@@ -10,9 +10,7 @@ import loginRoutes from './routes/loginRoutes';
 import recoveryPasswordRoutes from './routes/recoveryPasswordRoutes';
 import paymentsRoutes from './routes/paymentsRoutes';
 import rankingRoutes from './routes/rankingRoutes';
-
-import EarningsWebSocketService from './services/earnings.ws';
-
+import earningsRoutes from './routes/earnigsRoutes';
 import { registerWebhook } from './controllers/paymentsController';
 
 dotenv.config();
@@ -73,9 +71,7 @@ app.use('/api/authentication', recoveryPasswordRoutes);
 app.use('/api/', playerRoutes);
 app.use('/api', paymentsRoutes);
 app.use('/api', rankingRoutes);
-
-// Inicializa o serviço WebSocket
-EarningsWebSocketService.initialize(server);
+app.use('/api', earningsRoutes);
 
 // Inicia o servidor
 const PORT = process.env.PORT || 3000;

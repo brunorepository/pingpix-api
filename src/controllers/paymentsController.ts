@@ -8,7 +8,7 @@ import appRootPath from 'app-root-path';
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/player.schema';
 import { clients } from '../server';
-import EarningsWebSocketService from '../services/earnings.ws';
+import Earnings from '../models/earnings.schema';
 
 // Carrega variáveis de ambiente
 dotenv.config();
@@ -272,32 +272,6 @@ export async function subtractBalanceController(
     next(error); // Passa o erro para o middleware de tratamento
   }
 }
-
-// Array de ganhos (poderia estar em um banco de dados)
-const gains: { player: string; amount: number }[] = [];
-
-// Função que adiciona um ganho e envia uma notificação via WebSocket
-export const addGain = (player: string, amount: number): void => {
-  if (!player || typeof amount !== 'number') {
-    console.error('Dados inválidos para adicionar ganho.');
-    return;
-  }
-
-  const newGain = { player, amount };
-  gains.unshift(newGain);
-
-  // Mantém os últimos 10 ganhos
-  if (gains.length > 10) {
-    gains.pop();
-  }
-
-  // Envia a atualização para os clientes conectados via WebSocket
-  EarningsWebSocketService.broadcast({ type: 'update-gains', data: gains });
-
-  console.log('Novo ganho adicionado:', newGain);
-};
-
-// Função que lida com a atualização do saldo e a adição de ganho
 export async function addBalanceController(
   req: Request,
   res: Response,
@@ -322,31 +296,34 @@ export async function addBalanceController(
       return;
     }
 
-    // Busca o jogador e tenta adicionar o saldo
-    const updatedPlayer = await User.findOneAndUpdate(
-      { _id: playerId },
-      { $inc: { balance: amount } },
-      { new: true, runValidators: true },
-    );
+    // Busca o jogador
+    const updatedPlayer = await User.findOne({ _id: playerId });
 
     if (!updatedPlayer) {
       res.status(404).json({ error: 'Jogador não encontrado.' });
       return;
     }
 
-    // Dados do ganho a serem passados para addGain
-    const gainData = {
-      player: updatedPlayer.name, // Assumindo que o nome do jogador está em 'updatedPlayer.name'
-      amount: amount,
-    };
+    // Atualiza o saldo do jogador
+    updatedPlayer.balance += amount;
+    await updatedPlayer.save();
 
-    // Adiciona o ganho e notifica via WebSocket
-    addGain(gainData.player, gainData.amount);
+    // Criação de um novo ganho para o jogador, mesmo que seja igual ao anterior
+    const newGain = new Earnings({
+      playerId,
+      playerName: updatedPlayer.name, // Salva o nome do jogador
+      amount,
+      createdAt: new Date(), // Hora do ganho
+    });
 
-    // Retorna o saldo atualizado
+    // Salva o ganho no banco de dados
+    await newGain.save();
+
+    // Retorna o saldo atualizado junto com a confirmação do ganho
     res.status(200).json({
       message: 'Saldo atualizado com sucesso.',
       balance: updatedPlayer.balance,
+      gain: newGain, // Retorna o ganho adicionado
     });
   } catch (error) {
     console.error('Erro interno:', error);
